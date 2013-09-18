@@ -5,17 +5,15 @@
 
 import argparse 
 import urllib2
+import re
 
 def is_arithmetic(target):
 	"""
-	Check if target string contains only numbers and arithmetic operators
+	Check if target string contains only numbers, whitespace, and the
+	arithmetic/comparison operators +-/=()%.*><, 
 	"""
-	symbols = ['+', '-', '*', '/', '=', '(', ')', '%', '.', ' ']
-	numeric_ascii = range(48, 57)
-	for char in target:
-		if (char not in symbols) and (ord(char) not in numeric_ascii):
-			return False
-	return True 
+	unacceptable_chars = r"[^\d\s+-/=()%.*><,]"
+	return (re.search(unacceptable_chars, target) is None)
 
 def CalCalc(target, force_wolfram=False):
 	"""
