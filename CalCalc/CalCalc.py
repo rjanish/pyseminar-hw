@@ -41,9 +41,10 @@ def query_wolframalpha(request):
 	# with the characters %20, as is the convention in wolfram urls
 	wolfram_request = re.sub(r"\s", "%20", request.strip())
 	# this is the conventional form for a wolfram search url, the string 
-	# UAGAWR-3X6Y8W777Q is a wolfram app id for the python seminar course
+	# TKA4Y6-23XL8P9RRP my own wolfram app id, it is restricted to 2000 
+	# calls per month, after which each call will fail
 	wolfram_url = ("http://api.wolframalpha.com/v2/query?input="
-				   "{}&appid=UAGAWR-3X6Y8W777Q".format(wolfram_request))
+				   "{}&appid=TKA4Y6-23XL8P9RRP".format(wolfram_request))
 	# get wolfram results, extract all 'results pod' matches.  The 
 	# formating for these comes from examining a few wolfram search results.
 	results_pod_re = re.compile(r"<pod title='Result'.*?</pod>", re.DOTALL)
@@ -82,13 +83,13 @@ def calculate(target, force_wolfram=False):
 ########################################################################
 
 def test_1(): 
-	assert int(calculate("3 + 7")) == 11
+	assert int(calculate("3 + 7")) == 10
 
 def test_2():
 	assert abs(float(calculate("5.0**3.0 - 125.0"))) < 10**(-12)
 
 def test_3():
-	assert abs(float(calculate("Mass of the proton in grams")) - 1.672622*10**(-24)) < 10**(-5)
+	assert "938.27203 MeV/c^2" in calculate("Mass of the proton in MeV")
 
 def test_4():
 	assert "42" in calculate("What is the meaning of life?")
