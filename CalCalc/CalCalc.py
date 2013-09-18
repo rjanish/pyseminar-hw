@@ -49,14 +49,11 @@ def query_wolframalpha(request):
 	results_pod_re = re.compile(r"<pod title='Result'.*?</pod>", re.DOTALL)
 	with ReadURL(wolfram_url) as wolfram_search:
 		full_results = wolfram_search.read()
-		print full_results
 		results_pods = results_pod_re.finditer(full_results)
 	# return the first chunk of plain text in a 'results pod' 
 	plaintext_re = re.compile(r"<plaintext>(.*?)</plaintext>", re.DOTALL)
 	for pod_match in results_pods:
 		pod_string = pod_match.group() 
-		print pod_string
-		print
 		result = plaintext_re.search(pod_string)
 		if result is not None:
 			return result.group(1)
@@ -78,7 +75,6 @@ def calculate(target, force_wolfram=False):
 			results = query_wolframalpha(target)
 	else:
 		results = query_wolframalpha(target)
-	print results
 	if results is None:
 		results = "Result could not be found"
 	return results
