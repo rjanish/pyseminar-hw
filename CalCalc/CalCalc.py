@@ -49,11 +49,14 @@ def query_wolframalpha(request):
 	results_pod_re = re.compile(r"<pod title='Result'.*?</pod>", re.DOTALL)
 	with ReadURL(wolfram_url) as wolfram_search:
 		full_results = wolfram_search.read()
+		print full_results
 		results_pods = results_pod_re.finditer(full_results)
 	# return the first chunk of plain text in a 'results pod' 
 	plaintext_re = re.compile(r"<plaintext>(.*?)</plaintext>", re.DOTALL)
 	for pod_match in results_pods:
 		pod_string = pod_match.group() 
+		print pod_string
+		print
 		result = plaintext_re.search(pod_string)
 		if result is not None:
 			return result.group(1)
@@ -75,6 +78,7 @@ def calculate(target, force_wolfram=False):
 			results = query_wolframalpha(target)
 	else:
 		results = query_wolframalpha(target)
+	print results
 	if results is None:
 		results = "Result could not be found"
 	return results
@@ -82,19 +86,19 @@ def calculate(target, force_wolfram=False):
 ########################################################################
 
 def test_1(): 
-	assert calculate("3 + 7") == 11
+	assert int(calculate("3 + 7")) == 11
 
 def test_2():
-	assert abs(calculate("5.0**3.0 - 125.0")) < 10**(-12)
+	assert abs(float(calculate("5.0**3.0 - 125.0"))) < 10**(-12)
 
 def test_3():
-	assert abs(calculate("Mass of the proton in grams") - 1.672622*10**(-24)) < 10**(-5)
+	assert abs(float(calculate("Mass of the proton in grams")) - 1.672622*10**(-24)) < 10**(-5)
 
 def test_4():
 	assert "42" in calculate("What is the meaning of life?")
 
 def test_5():
-	assert abs(calculate("e^(sqrt(-1)*2pi)") - 1.0) < 10**(-12)
+	assert abs(float(calculate("e^(sqrt(-1)*2pi)")) - 1.0) < 10**(-12)
 
 ########################################################################	
 
