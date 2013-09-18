@@ -15,6 +15,53 @@ def is_arithmetic(target):
 	unacceptable_chars = r"[^\d\s+-/=()%.*><,]"
 	return (re.search(unacceptable_chars, target) is None)
 
+class ReadURL(object):
+	"""
+	This is a wrapper class around urllib2's urlopen function that provides 
+	a context manager.  On entering it gets a stream from urlopen and 
+	on exiting it closes the stream """
+	def __init__(self, url):
+		self.url = url
+
+	def __enter__(self):
+		self.stream = urllib2.urlopen(self.url)
+		return self.stream
+
+	def __exit__(self, type, value, traceback):
+		self.stream.close()
+
+def query_wolframalpha(request):
+	"""
+	Send the string request to wolfram alpha, and return the first 
+	string 	that wolfram displays under the "Results" heading. If 
+	no plain text result is received from wolfram, returns None. 
+	"""
+	request = str(request)
+	# strip leading and trailing whitespace, replace all other whitespace
+	# with the characters %20, as is the convention in wolfram urls
+	wolfram_request = re.sub(r"\s", "%20", request.strip())
+	# this is the conventional form for a wolfram search url, the string 
+	# UAGAWR-3X6Y8W777Q is a wolfram app id for the python seminar course
+	wolfram_url = ("http://api.wolframalpha.com/v2/query?input="
+				   "{}&appid=UAGAWR-3X6Y8W777Q".format(wolfram_request))
+	# get wolfram results, extract all 'results pod' matches.  The 
+	# formating for these comes from examining a few wolfram search results.
+	results_pod_re = re.compile(r"<pod title='Result'.*?</pod>", re.DOTALL)
+	with ReadURL(wolfram_url) as wolfram_search:
+		full_results = wolfram_search.read()
+		results_pods = results_pod_re.finditer(full_results)
+	# return the first chunk of plain text in a 'results pod' 
+	plaintext_re = re.compile(r"<plaintext>(.*?)</plaintext>", re.DOTALL)
+	for pod_match in results_pods:
+		pod_string = pod_match.group() 
+		print pod_string
+		print
+		result = plaintext_re.search(pod_string)
+		if result is not None:
+			return result.group(1)
+	# no results pods contain a plain text answer
+	return None
+
 def CalCalc(target, force_wolfram=False):
 	"""
 	Evaluate the target string.  For security, evaluation is only done 
@@ -27,9 +74,11 @@ def CalCalc(target, force_wolfram=False):
 		try:
 			results = eval(target)
 		except:
-			results = 'wolfram output'
+			results = query_wolframalpha(target)
 	else:
-		results = 'wolfram output'
+		results = query_wolframalpha(target)
+	if results is None:
+		results = "Result could not be found"
 	return results
 
 if __name__ == '__main__':
