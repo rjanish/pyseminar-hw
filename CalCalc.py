@@ -54,15 +54,13 @@ def query_wolframalpha(request):
 	plaintext_re = re.compile(r"<plaintext>(.*?)</plaintext>", re.DOTALL)
 	for pod_match in results_pods:
 		pod_string = pod_match.group() 
-		print pod_string
-		print
 		result = plaintext_re.search(pod_string)
 		if result is not None:
 			return result.group(1)
 	# no results pods contain a plain text answer
 	return None
 
-def CalCalc(target, force_wolfram=False):
+def calculate(target, force_wolfram=False):
 	"""
 	Evaluate the target string.  For security, evaluation is only done 
 	locally if the target string contains only numbers and arithmetic 
@@ -81,6 +79,8 @@ def CalCalc(target, force_wolfram=False):
 		results = "Result could not be found"
 	return results
 
+########################################################################
+
 if __name__ == '__main__':
 	# process cmd line args
 	parser = argparse.ArgumentParser("Generate a histogram")
@@ -89,4 +89,4 @@ if __name__ == '__main__':
 						help="force evaluation using wolfram alpha")
 	results = parser.parse_args()
 	# evaluate input
-	print CalCalc(results.to_evaluate, force_wolfram=results.wolfram)
+	print calculate(results.to_evaluate, force_wolfram=results.wolfram)
