@@ -1,4 +1,3 @@
-
 stocks-plot.py
 This script generates a plot of Yahoo! and Google stock prices and New York temperatures.  Usage is just:
 	$ python stocks-plot.py
