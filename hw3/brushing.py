@@ -1,3 +1,7 @@
+'''defines BrushingPlot class, used to make pairwise brushed scatter plots'''
+
+# homework 3, python seminar fall 2013
+# Ryan Janish
 
 import argparse
 import numpy as np 
@@ -26,9 +30,12 @@ class BrushingPlot(object):
 	be displayed on the axis of the plots
 
 	title - overall title of figure
+
+	figsize - tuple that gives the size of resulting figure in inches, if 
+	not specified, matplotlib's default will be used
 	'''
 	def __init__(self, data, color='blue', dimension_names=None, 
-				 title="Brushing Plot"):
+				 title="Brushing Plot", figsize=None):
 		self.data = np.array(data)
 		data_shape = self.data.shape
 		# verify data shape
@@ -51,6 +58,7 @@ class BrushingPlot(object):
 		else:
 			raise Exception("Invalid dimension names {} for data "
 							"shape {}".format(dimension_names, data_shape))
+		self.figsize = figsize
 		# initialize brushing data
 		self.target_axis = None
 		self.rec_start = None
@@ -63,7 +71,10 @@ class BrushingPlot(object):
 
 	def initialize_figure(self):
 		'''make static figure of pairwise scatter plots'''
-		self.figure = plt.figure()
+		if self.figsize is None:
+			self.figure = plt.figure()
+		else:
+			self.figure = plt.figure(figsize=self.figsize)
 		# add axes to lower left subplot grid points
 		grid_size = (self.datapnt_dim, self.datapnt_dim)
 		y, x = np.indices(grid_size)
@@ -73,7 +84,7 @@ class BrushingPlot(object):
 		for loc in self.subplot_locations:
 			ax = plt.subplot2grid(grid_size, loc)
 			ax.set_label("{}-{}".format(loc[0], loc[1]))
-		self.figure.tight_layout()
+		self.figure.tight_layout(pad=2)
 		# plot data, title, axis labels
 		self.collections = []
 		self.limits = []
@@ -84,10 +95,10 @@ class BrushingPlot(object):
 			new_colletcion = ax.scatter(x_data, y_data, 
 									    c=self.colors, alpha=1.0)
 			self.collections.append([new_colletcion])
-			ax.set_xlabel(self.dim_names[grid_x])
-			ax.set_ylabel(self.dim_names[grid_y])
+			ax.set_xlabel(self.dim_names[grid_x], fontsize=14)
+			ax.set_ylabel(self.dim_names[grid_y], fontsize=14)
 			self.limits.append([ax.get_xlim(), ax.get_ylim()])
-		self.figure.suptitle(self.title)
+		self.figure.suptitle(self.title, fontsize=25)
 
 	def update_plot(self):
 		'''
@@ -141,7 +152,7 @@ class BrushingPlot(object):
 			self.rec_start = event.xdata, event.ydata
 
 	def on_movement(self, event):
-		'''resize rectangle to match cursor position, update plot'''
+		'''resize rectangle to match cursor position'''
 		if (self.target_axis is not None) and (self.rec_start is not None):
 			if event.inaxes is self.target_axis:
 				if self.rec is not None:
@@ -152,8 +163,6 @@ class BrushingPlot(object):
 				self.rec = corners_to_rec(self.rec_start, current_pos)
 				self.target_axis.add_patch(self.rec)
 				self.figure.canvas.draw()
-				# update plot
-				self.update_plot()
 
 	def on_release(self, event):
 		'''freeze rectangle'''
@@ -184,28 +193,6 @@ def corners_to_rec(c1, c2, fill=False):
 	rect = Rectangle(lower_left, width, height, fill=fill)
 	return rect
 
-def struc_to_float(struct_array, field):
-	'''
-	takes a structured array containing exactly one string field and 
-	returns a float array with the string field removed and a 
-	corresponding string array containing the old string fields
-	'''
-	field_values = np.unique(struct_array[field])
-	try:
-		field_values.sort()
-	except:
-		pass
-	new_array = []
-	removed_section = []
-	for fv in field_values:
-		other_fields = [n for n in struct_array.dtype.names if n != field]
-		trimmed = struct_array[struct_array[field] == fv][other_fields]
-		removed = struct_array[struct_array[field] == fv][field]
-		floating = trimmed.view((float, len(trimmed.dtype.names)))
-		new_array.append(floating)
-		removed_section.append(removed)
-	return np.array(new_array), np.hstack(removed_section)
-
 #################################################################
 
 if __name__ == '__main__':
@@ -216,7 +203,7 @@ if __name__ == '__main__':
 	results = parser.parse_args()
 	# make plot
 	print "plotting {}".format(results.datafile)
-	data = np.loattxt(results.datafile)
+	data = np.loadtxt(results.datafile, skiprows=1)
 	plot_title = results.datafile
 	with open(results.datafile, 'r') as datafile:
 		header = datafile.readlines()[0].split()
