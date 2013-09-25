@@ -18,5 +18,6 @@ This class implements brushing of a pairwise n-dimensional scatter plot, with a 
 - Brushing only updates after the rectangle has been drawn, it does not update in real time
 To select data, simply click and drag on a plot to make a selection rectangle, and then release to see the brushed data.  Clicking anywhere on the figure will remove the rectangle and allow you to draw a new one.
 
+
 brushing_example.py
 An example of using BrushingPlot on the Anderson Iris data, for usage see the scripts docstring.
