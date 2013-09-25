@@ -1,3 +1,7 @@
+"""Script to generate plot of google and yahoo! stocks and ny temps"""
+
+# homework 3, python seminar fall 2013
+# Ryan Janish
 
 import numpy as np 
 import matplotlib.pyplot as plt
