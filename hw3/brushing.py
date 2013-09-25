@@ -1,8 +1,8 @@
 
+import argparse
 import numpy as np 
 from matplotlib import pyplot as plt
-from matplotlib.patches import Rectangle, Circle
-from matplotlib.collections import PatchCollection
+from matplotlib.patches import Rectangle
 
 class BrushingPlot(object):
 	'''
@@ -21,6 +21,11 @@ class BrushingPlot(object):
 	If a single color is given, then all datapoints are plotted with
 	that color.  For a list of colors, each datapoint is plotted with the 
 	corresponding color from the colors list.  
+
+	dimension_names - give the name of each dimension of the datapoints, to
+	be displayed on the axis of the plots
+
+	title - overall title of figure
 	'''
 	def __init__(self, data, color='blue', dimension_names=None, 
 				 title="Brushing Plot"):
@@ -85,6 +90,11 @@ class BrushingPlot(object):
 		self.figure.suptitle(self.title)
 
 	def update_plot(self):
+		'''
+		removes current scatter plot points, determines which points are
+		currently selected by a the rectangle, and re-plots the scatter 
+		plots with appropriate shading
+		'''
 		if self.rec is not None:
 			label = self.rec.axes.get_label()
 			y, x = map(int, label.split('-'))
@@ -119,7 +129,7 @@ class BrushingPlot(object):
 			self.figure.canvas.draw()
 
 	def on_press(self, event):
-		'''initialize hollow rectangle object'''
+		'''initialize hollow rectangle object, update plot'''
 		if self.rec is not None:
 			self.rec.remove()
 			self.figure.canvas.draw()
@@ -131,7 +141,7 @@ class BrushingPlot(object):
 			self.rec_start = event.xdata, event.ydata
 
 	def on_movement(self, event):
-		'''resize rectangle to match cursor position'''
+		'''resize rectangle to match cursor position, update plot'''
 		if (self.target_axis is not None) and (self.rec_start is not None):
 			if event.inaxes is self.target_axis:
 				if self.rec is not None:
@@ -175,16 +185,42 @@ def corners_to_rec(c1, c2, fill=False):
 	return rect
 
 def struc_to_float(struct_array, field):
+	'''
+	takes a structured array containing exactly one string field and 
+	returns a float array with the string field removed and a 
+	corresponding string array containing the old string fields
+	'''
 	field_values = np.unique(struct_array[field])
 	try:
 		field_values.sort()
 	except:
 		pass
 	new_array = []
+	removed_section = []
 	for fv in field_values:
 		other_fields = [n for n in struct_array.dtype.names if n != field]
 		trimmed = struct_array[struct_array[field] == fv][other_fields]
-		print trimmed
+		removed = struct_array[struct_array[field] == fv][field]
 		floating = trimmed.view((float, len(trimmed.dtype.names)))
 		new_array.append(floating)
-	return np.array(new_array), field_values
+		removed_section.append(removed)
+	return np.array(new_array), np.hstack(removed_section)
+
+#################################################################
+
+if __name__ == '__main__':
+	# process cmd line args
+	parser = argparse.ArgumentParser("Generate a Brushing Plot")
+	parser.add_argument("datafile", type=str, 
+						help="datafile to plot, must be formated as whitespace delimited columns of numbers with a one-line header")
+	results = parser.parse_args()
+	# make plot
+	print "plotting {}".format(results.datafile)
+	data = np.loattxt(results.datafile)
+	plot_title = results.datafile
+	with open(results.datafile, 'r') as datafile:
+		header = datafile.readlines()[0].split()
+	if len(header) >= data.shape[1]:
+		BrushingPlot(data, dimension_names=header, title=plot_title)
+	else:
+		BrushingPlot(data, title=plot_title)
