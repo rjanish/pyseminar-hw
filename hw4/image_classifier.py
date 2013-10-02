@@ -34,10 +34,14 @@ class ImageFeaturizer(object):
     '''
 
     def __init__(self, images=[]):
-        DEFAULT_FEATURES_RGB = [self.red_frac__green_frac__blue_frac]
+        DEFAULT_FEATURES_RGB = [self.red_frac__green_frac__blue_frac,
+                                self.red_std__green_std__blue_std,
+                                self.rgb_theta__rgb_phi]
         DEFAULT_FEATURES_GRAY = [self.frac_peaks,
                                  self.frac_valleys,
-                                 self.frac_hedges__frac_vedges]
+                                 self.frac_hedges__frac_vedges,
+                                 self.im_std,
+                                 self.g11__g12__g13__g14__g21__g22__g23__g34__g31__g32__g33__g34__g41__g42__g34__g44]
         self.rgb_features_to_use = DEFAULT_FEATURES_RGB
         self.gray_features_to_use = DEFAULT_FEATURES_GRAY
         self.features_to_use = DEFAULT_FEATURES_RGB + DEFAULT_FEATURES_GRAY
@@ -70,8 +74,9 @@ class ImageFeaturizer(object):
             name += feature_func.func_name.split("__")
         return name
 
-    # begin feature calculators
+    # begin rgb feature calculators
     def red_frac__green_frac__blue_frac(self, image):
+        '''fraction of luminosity that is red, green and blue'''
         if len(image.shape) == 3:
             total = float(image.sum())
             rgb = np.array([image[:,:,n].sum() for n in range(3)])
@@ -79,18 +84,74 @@ class ImageFeaturizer(object):
         else:
             return [0.0]*3
 
+    def red_std__green_std__blue_std(self, image):
+        '''standard deviation of red, green and blue subframes'''
+        if len(image.shape) == 3:
+            std_devs = np.array([np.std(image[:,:,n]) for n in range(3)])
+            return list(std_devs)
+        else:
+            return [0.0]*3
+
+    def rgb_theta__rgb_phi(self, image):
+        ''' 
+        represent the image as a point in R^3, with each coordinate given by 
+        the sum over a rgb color channel, and then return the spherical 
+        coordinate angles of the image in rgb-space
+        '''
+        if len(image.shape) == 3:
+            x,y,z = [image[:,:,n].sum() for n in range(3)]
+            r = np.sqrt(x**2 + y**2 + x**2)
+            try:
+                theta = np.arccos(z/r)
+                phi = np.arctan2(y, x)
+            except:
+                theta, phi = 0.0, 0.0
+            if (0 <= theta <= np.pi) and (-np.pi <= phi <= np.pi):
+                return [theta, phi]
+            else:
+                return [0.0, 0.0]
+        else:
+            return [0.0, 0.0]
+
+    # begin grayscale feature calculators
     def frac_peaks(self, image):
+        '''fraction of all grayscale pixels that are local maxima'''
         peaks = peak_local_max(image)
-        return [peaks.shape[0]/image.size]
+        return [peaks.shape[0]/float(image.size)]
 
     def frac_valleys(self, image):
-        valleys = peak_local_max(-image)
-        return [valleys.shape[0]/image.size]
+        '''fraction of all grayscale pixels that are local minima'''
+        valleys = peak_local_max(np.max(image)-image)
+        return [valleys.shape[0]/float(image.size)]
+
+    def im_std(self, image):
+        '''standard deviation of grayscale image'''
+        return [np.std(image)]
 
     def frac_hedges__frac_vedges(self, image):
+        '''
+        fraction of all grayscale pixels that lie on vertical and
+        horizontal edges in the image interior
+        '''
         v = vsobel(image)
         h = hsobel(image)
         return [v.mean(), h.mean()]
+
+    def g11__g12__g13__g14__g21__g22__g23__g34__g31__g32__g33__g34__g41__g42__g34__g44(self, image):
+        '''
+        divide image into a 4x4 grid of sub pixels, compute the fraction of 
+        total grayscale luminosity located in each subimage 
+        '''
+        y, x = image.shape
+        total = image.sum()
+        block_weights = []
+        x_divisions = np.linspace(0, x, 5).astype(int)
+        y_divisions = np.linspace(0, y, 5).astype(int)
+        for xi, xf in zip(x_divisions[:-1], x_divisions[1:]):
+            for yi, yf in zip(y_divisions[:-1], y_divisions[1:]):
+                block_weights.append(image[yi:yf, xi:xf].sum()/total)
+        return block_weights
+
 
 def prepare_training_set(training_dir):
     '''
@@ -185,11 +246,14 @@ def construct_classifier(training_dir, folds=20,
     improv_factor = (accuracy - random_guessing)/float(random_guessing)
     print ("improvement factor over random guessing: "
            "{:.1f}".format(improv_factor))
-    importances = np.argsort(full_classifier.feature_importances_)
+    importances = np.argsort(full_classifier.feature_importances_)[::-1]
     sorted_features = feature_names[importances]
+    sorted_importances = full_classifier.feature_importances_[importances]
+    sorted_importances = sorted_importances/np.max(sorted_importances)
     print "features by importance:"
-    for feature_name in sorted_features:
-        print "\t{}".format(feature_name)
+    for n, (feature_name, importance) in \
+                        enumerate(zip(sorted_features, sorted_importances)):
+        print "{}\t{}\t{:.3f}".format(n+1 ,feature_name, importance)
     return full_classifier, accuracy
 
 def run_final_classifier(path, forest='trained_classifier.p', 
