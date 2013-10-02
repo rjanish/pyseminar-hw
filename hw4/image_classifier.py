@@ -3,6 +3,8 @@ import os
 
 import numpy as np
 from scipy.ndimage import imread
+from sklearn.ensemble import RandomForestClassifier
+from sklearn import grid_search
 
 class ImageFeaturizer(object):
     '''
@@ -58,6 +60,37 @@ class ImageFeaturizer(object):
 
 
 def prepare_training_set(training_dir):
+    '''
+    Gather filenames and category names from a training set, assigns each
+    category an integer label and returns a list of training image filenames,
+    a corresponding list of the category label of each image, and a list of
+    category string names indexed by integer label. 
+
+
+    Arguments:
+    training_dir - directory that holds training set.  The structure is 
+    assumed to be:
+        training_dir
+            - category1
+                - image_in_category1_1
+                - image_in_category1_2
+                ...
+            - category2
+                - image_in_category2_1
+                - image_in_category2_2
+                ...
+            ...
+    The names of categories will be taken from the name of their 
+    subdirectory, and all images in that subdir are assigned to the 
+    corresponding category.  
+
+    Output:
+    a tuple (image_files, categories, cat_names)
+    image_files - list of all training image filenames
+    categories - list of the category of each training image, respectively
+    cat_name - list of string names for each category, such that the name 
+    of the nth category is given by cat_name[n]
+    '''
     cat_names = [d for d in os.listdir(training_dir)
                     if os.path.isdir(training_dir + '/' + d)]
     cat_dirs = [training_dir + '/' + catagory for catagory in cat_names]
@@ -69,5 +102,8 @@ def prepare_training_set(training_dir):
                                         f[0] != '.')]
         catagories += [cat_num]*len(images)
         image_files += images
-    return image_files, catagories, cat_names
+    return image_files, np.array(catagories), cat_names
 
+def construct_classifier(training_dir):
+    image_files, catagories, cat_names = prepare_training_set(training_dir)
+    feautres = ImageFeaturizer(images=image_files).get_features()
