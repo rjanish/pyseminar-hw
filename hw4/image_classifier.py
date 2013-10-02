@@ -2,12 +2,15 @@
 import os
 import sys
 import pickle
+import time
 
 import numpy as np
 from numpy.random import shuffle as npshuffle
 from scipy.ndimage import imread
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import cross_validation as cval
+from skimage.feature import peak_local_max, corner_subpix
+from skimage.filter import vsobel, hsobel
 
 class ImageFeaturizer(object):
     '''
@@ -19,21 +22,25 @@ class ImageFeaturizer(object):
     the class, or added later with the "compute_features" method.  The
     resulting features can be retrieved with the "get_features" method.
 
+    Features should be written as methods of the class which return a list 
+    of numbers, so that each method may compute more than one feature when 
+    called if more efficient.  The name of these methods should be of the 
+    form: "feature_1__feature_2__feature_3()", where the double underscore
+    will be used to compute a list of individual feature names. 
+
     Arguments:
     ---------------
-    images - list of image filenames to featureize
-    feature_list - list of functions to use to compute features, by default
-    it uses all of the feature methods defined in the class  
+    images - list of image filenames to featureize 
     '''
 
-    def __init__(self, images=[], feature_list='all'):
-        DEFAULT_FEATURES = [self.red_fraction,
-                            self.blue_fraction,
-                            self.green_fraction]
-        if feature_list == 'all':
-            self.features_to_use = DEFAULT_FEATURES
-        else:
-            self.features_to_use = feature_list
+    def __init__(self, images=[]):
+        DEFAULT_FEATURES_RGB = [self.red_frac__green_frac__blue_frac]
+        DEFAULT_FEATURES_GRAY = [self.frac_peaks,
+                                 self.frac_valleys,
+                                 self.frac_hedges__frac_vedges]
+        self.rgb_features_to_use = DEFAULT_FEATURES_RGB
+        self.gray_features_to_use = DEFAULT_FEATURES_GRAY
+        self.features_to_use = DEFAULT_FEATURES_RGB + DEFAULT_FEATURES_GRAY
         self.features = []
         self.compute_features(images)
 
@@ -44,36 +51,46 @@ class ImageFeaturizer(object):
         stored in 2d list self.features
         '''
         for im_filename in images:
-            im = imread(im_filename)
-            f = [feature_func(im) for feature_func in self.features_to_use]
-            self.features.append(f)
+            im = imread(im_filename).astype(float)
+            im_features = []
+            for feature_func in self.rgb_features_to_use:
+                im_features += feature_func(im)
+            if len(im.shape) == 3:
+              gray = im.sum(axis=2)
+            for feature_func in self.gray_features_to_use:
+                im_features += feature_func(gray)
+            self.features.append(im_features)
 
     def get_features(self):
         return np.array(self.features)
 
     def feature_names(self):
-        return [feature_func.func_name for feature_func 
-                                       in self.features_to_use]
+        name = []
+        for feature_func in self.features_to_use:
+            name += feature_func.func_name.split("__")
+        return name
 
     # begin feature calculators
-    def red_fraction(self, image):
+    def red_frac__green_frac__blue_frac(self, image):
         if len(image.shape) == 3:
-            return image[:,:,0].sum()/float(image.sum())
+            total = float(image.sum())
+            rgb = np.array([image[:,:,n].sum() for n in range(3)])
+            return list(rgb/total)
         else:
-            return 0.0
+            return [0.0]*3
 
-    def blue_fraction(self, image):
-        if len(image.shape) == 3:
-            return image[:,:,1].sum()/float(image.sum())
-        else:
-            return 0.0
+    def frac_peaks(self, image):
+        peaks = peak_local_max(image)
+        return [peaks.shape[0]/image.size]
 
-    def green_fraction(self, image):
-        if len(image.shape) == 3:
-            return image[:,:,2].sum()/float(image.sum())
-        else:
-            return 0.0
+    def frac_valleys(self, image):
+        valleys = peak_local_max(-image)
+        return [valleys.shape[0]/image.size]
 
+    def frac_hedges__frac_vedges(self, image):
+        v = vsobel(image)
+        h = hsobel(image)
+        return [v.mean(), h.mean()]
 
 def prepare_training_set(training_dir):
     '''
@@ -138,6 +155,7 @@ def construct_classifier(training_dir, folds=20,
     clf - final classifier object
     accuracy - median accuracy of classifier via cross validation
     '''
+    initial_time = time.time()
     # get data, compute features
     image_files, categories = prepare_training_set(training_dir)
     featurizer = ImageFeaturizer(images=image_files)
@@ -159,8 +177,9 @@ def construct_classifier(training_dir, folds=20,
     full_classifier.fit(features, categories)
     # output stats and save full classifier
     pickle.dump(full_classifier, open(classifier_file,'w'))
-    print ("\nbuilt random forest classifier, "
-           "saved to: {}".format(classifier_file))
+    final_time = time.time()
+    print ("\nbuilt random forest classifier in {:.1f} sec, "
+           "saved to: {}".format(final_time - initial_time, classifier_file))
     print "model accuracy: {:.3f}".format(accuracy)
     print "accuracy from random guessing: {:.3f}".format(random_guessing)
     improv_factor = (accuracy - random_guessing)/float(random_guessing)
@@ -168,13 +187,17 @@ def construct_classifier(training_dir, folds=20,
            "{:.1f}".format(improv_factor))
     importances = np.argsort(full_classifier.feature_importances_)
     sorted_features = feature_names[importances]
-    print "three most important features:"
-    for feature_name in sorted_features[:3]:
+    print "features by importance:"
+    for feature_name in sorted_features:
         print "\t{}".format(feature_name)
     return full_classifier, accuracy
 
 def run_final_classifier(path, forest='trained_classifier.p', 
                          print_results=True):
+    '''
+    Use classifier saved in the file forest to identify each in in the 
+    directory path, results are printed to screen if print_results is True
+    '''
     clf = pickle.load(open(forest, "rb"))
     if path[-1] == '/':
         path = path[:-1]
@@ -189,6 +212,6 @@ def run_final_classifier(path, forest='trained_classifier.p',
     print "------------------------------------------"
     for im, cat in zip(images, results):
         print "{}\t\t{}".format(im, cat)
-    return
+    return images, results
 
 #############################################################
