@@ -6,6 +6,7 @@ from scipy.fftpack import fft2, ifft2, fftshift
 
 class ImageMethods(object):
     def invert(self, image):
+        image = np.array(image)
         if len(image.shape) == 3:
             maxes = np.max(np.max(image, axis=0), axis=0)
             for channel, channel_max in enumerate(maxes):
@@ -18,6 +19,7 @@ class ImageMethods(object):
         return image
 
     def frequency_space_by_channel(self, image): 
+        image = np.array(image)
         if len(image.shape) == 3:
             freq_space = np.zeros(image.shape)
             for color in [0,1,2]:
@@ -29,6 +31,7 @@ class ImageMethods(object):
         return freq_space
 
     def colorize_by_power(self, image):
+        image = np.array(image)
         if len(image.shape) == 3:
             power = fft2(np.sum(image, axis=2))**2
         elif len(image.shape) == 2:
@@ -68,4 +71,3 @@ class ImageServer(object):
 if __name__ == '__main__':
     im_server = ImageServer()
     im_server.run()
-    
