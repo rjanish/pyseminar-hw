@@ -1,9 +1,10 @@
 
+from SimpleXMLRPCServer import SimpleXMLRPCServer
+
 import numpy as np
 from scipy.fftpack import fft2, ifft2, fftshift
 
-class ImageServer(object):
-    
+class ImageMethods(object):
     def invert(self, image):
         if len(image.shape) == 3:
             maxes = np.max(np.max(image, axis=0), axis=0)
@@ -49,4 +50,22 @@ class ImageServer(object):
             colorized[..., color] = ifft2(np.where(region, power, 0.0))
         return colorized
 
-        
+class ImageServer(object):
+    __init__(self, name='localhost', port=5000, help=True):
+        self.name = name
+        self.port = port
+
+    def run():
+        server = SimpleXMLRPCServer((name, port))
+        server.register_instance(ImageMethods())
+        print "Starting ImageServer........"
+        print "Press Control-C to exit"
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            print "ImageServer exiting........."
+            
+if __name__ == '__main__':
+    im_server = ImageServer()
+    im_server.run()
+    
