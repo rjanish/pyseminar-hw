@@ -39,3 +39,10 @@ all_airports_table.create(bind=engine)
 top_airports_table.create(bind=engine)
 engine.execute(all_airports_table.insert(), all_airports).rowcount
 engine.execute(top_airports_table.insert(), list(top_airports)).rowcount
+
+# join database, get table of full data on the top 50 airports
+joined = top_airports_table.join(all_airports_table, 
+                    top_airports_table.c.icao == all_airports_table.c.icao)
+query = sql.select([top_airports_table.c.city, all_airports_table])
+query = query.select_from(joined)
+new_table = engine.execute(query)
