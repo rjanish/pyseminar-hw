@@ -1,5 +1,6 @@
 
 import csv
+from datetime import date
 
 import numpy as np
 import sqlalchemy as sql 
@@ -97,15 +98,22 @@ new_table = engine.execute(query)
 
 # make weather database
 start_year = 2008
+start_date = date(start_year, 1, 1)
 weather_table = sql.Table('weather', metadata,
                           sql.Column('icao', sql.String),
-                          sql.Column('date', sql.String),
+                          sql.Column('date', sql.Integer),
                           sql.Column('min_temp', sql.Float),
                           sql.Column('max_temp', sql.Float),
                           sql.Column('humidity', sql.Float),
                           sql.Column('precip', sql.Float),
                           sql.Column('cloud_cover', sql.Integer))
 weather_table.create(bind=engine)
+full_weather_data = []
 for airport in top_airports:
-    weather_data = get_weather_since(airport["icao"], start_year)
-    engine.execute(weather_table.insert(), weather_data)
+    airport_weather_data = get_weather_since(airport["icao"], start_year)
+    for daily_data in airport_weather_data:
+        year_month_day = map(int, daily_data['date'].split('-'))
+        num_of_days = (date(*year_month_day) - start_date).days
+        daily_data['date'] = num_of_days
+        full_weather_data.append(daily_data)
+engine.execute(weather_table.insert(), full_weather_data)
