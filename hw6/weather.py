@@ -3,7 +3,50 @@ import csv
 
 import numpy as np
 import sqlalchemy as sql 
+import requests
 
+def get_monthy_weather(icao, year, month):
+    ''' 
+    Download 1 month of daily min/max temps, mean humidity, 
+    inches precipitation, and cloud cover level from wunderground.com 
+    for a given airport code. Returned as list of dicts, one dict per day.
+    '''
+    url = ("http://www.wunderground.com/history/airport/{}/{}/{}/1/"
+           "MonthlyHistory.html?format=1".format(icao, year, month))
+    weather_data = []
+    data_stream = requests.get(url).iter_lines()
+    data_stream.next() # skip header
+    data_stream.next() # skip header
+    for line in data_stream:
+        data = line.split(',')
+        for data_pt, value in enumerate(data):
+            if (value == 'T') or (value == 'MM'):
+                data[data_pt] = 0.0
+        weather_data.append({"date": unicode(data[0], 'utf-8'),
+                             "min_temp": float(data[3]),
+                             "max_temp": float(data[1]),
+                             "humidity": float(data[8]),
+                             "precip": float(data[19]),
+                             "cloud_cover": int(data[20])})
+    return weather_data
+
+def get_weather_since(icao, year):
+    ''' 
+    Download all daily min/max temps, mean humidity, inches precipitation,
+    and cloud cover level from wunderground.com for a given airport code 
+    since Jan 1st of the passed year.  Returned as a list of dicts, 
+    with one dict per day.
+    '''
+    print "\ndownloading weather data from {} since {}:".format(icao, year)
+    full_weather_data = []
+    for y in range(year, 2014):
+        for m in range(1, 13):
+            if (y < 2013) or (m < 10):
+                print '{}-{:02d}'.format(y, m)
+                full_weather_data += get_monthy_weather(icao, y, m)
+    return full_weather_data
+
+#####################################################################
 
 # read all airport data,
 # save name, icao code, lat, and long 
