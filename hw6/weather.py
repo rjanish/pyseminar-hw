@@ -8,9 +8,10 @@ import requests
 
 def get_monthy_weather(icao, year, month):
     ''' 
-    Download 1 month of daily min/max temps, mean humidity, 
-    inches precipitation, and cloud cover level from wunderground.com 
-    for a given airport code. Returned as list of dicts, one dict per day.
+    Download 1 month of daily min/max temps (degrees F), mean humidity (%), 
+    precipitation (inches), and cloud cover level (qualitative scale 1-8) 
+    from wunderground.com for a given airport code. 
+    Returned as list of dicts, one dict per day.
     '''
     url = ("http://www.wunderground.com/history/airport/{}/{}/{}/1/"
            "MonthlyHistory.html?format=1".format(icao, year, month))
@@ -38,10 +39,10 @@ def get_monthy_weather(icao, year, month):
 
 def get_weather_since(icao, year):
     ''' 
-    Download all daily min/max temps, mean humidity, inches precipitation,
-    and cloud cover level from wunderground.com for a given airport code 
-    since Jan 1st of the passed year.  Returned as a list of dicts, 
-    with one dict per day.
+    Download all daily min/max temps (degrees F), mean humidity(%), 
+    precipitation (inches), and cloud cover level (qualitative scale 1-8) 
+    from wunderground.com for a given airport code since Jan 1st of the 
+    passed year.  Returned as a list of dicts, with one dict per day.
     '''
     print "\ndownloading weather data from {} since {}:".format(icao, year)
     full_weather_data = []
@@ -100,18 +101,19 @@ new_table = engine.execute(query)
 start_year = 2008
 start_date = date(start_year, 1, 1)
 weather_table = sql.Table('weather', metadata,
-                          sql.Column('icao', sql.String),
-                          sql.Column('date', sql.Integer),
-                          sql.Column('min_temp', sql.Float),
-                          sql.Column('max_temp', sql.Float),
-                          sql.Column('humidity', sql.Float),
-                          sql.Column('precip', sql.Float),
-                          sql.Column('cloud_cover', sql.Integer))
+                          sql.Column('icao', sql.String),         # airport code
+                          sql.Column('date', sql.Integer),        # days since start year
+                          sql.Column('min_temp', sql.Float),      # degrees F
+                          sql.Column('max_temp', sql.Float),      # degrees F
+                          sql.Column('humidity', sql.Float),      # %
+                          sql.Column('precip', sql.Float),        # inches
+                          sql.Column('cloud_cover', sql.Integer)) # scale 1-0
 weather_table.create(bind=engine)
 full_weather_data = []
 for airport in top_airports:
     airport_weather_data = get_weather_since(airport["icao"], start_year)
     for daily_data in airport_weather_data:
+        # compute days since jan 1 of start_year and replace string date
         year_month_day = map(int, daily_data['date'].split('-'))
         num_of_days = (date(*year_month_day) - start_date).days
         daily_data['date'] = num_of_days
