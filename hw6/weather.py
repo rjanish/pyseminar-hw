@@ -67,7 +67,7 @@ for row in top_airports_file:
     top_airports.append({"city": unicode(row[0], 'utf-8'),
                          "icao": unicode(row[3], 'utf-8')})
 
-# make databases
+# make airport databases
 engine = sql.create_engine('sqlite:///:memory:')
 metadata = sql.MetaData()
 all_airports_table = sql.Table('all_airports', metadata,
@@ -80,12 +80,27 @@ top_airports_table = sql.Table('top_airports', metadata,
                                sql.Column('icao', sql.String))
 all_airports_table.create(bind=engine)
 top_airports_table.create(bind=engine)
-engine.execute(all_airports_table.insert(), all_airports).rowcount
-engine.execute(top_airports_table.insert(), list(top_airports)).rowcount
+engine.execute(all_airports_table.insert(), all_airports)
+engine.execute(top_airports_table.insert(), list(top_airports))
 
-# join database, get table of full data on the top 50 airports
+# join airport database, get table of full data on the top 50 airports
 joined = top_airports_table.join(all_airports_table, 
                     top_airports_table.c.icao == all_airports_table.c.icao)
 query = sql.select([top_airports_table.c.city, all_airports_table])
 query = query.select_from(joined)
 new_table = engine.execute(query)
+
+# make weather database
+start_year = 2008
+weather_table = sql.Table('weather', metadata,
+                          sql.Column('icao', sql.String),
+                          sql.Column('date', sql.String),
+                          sql.Column('min_temp', sql.Float),
+                          sql.Column('max_temp', sql.Float),
+                          sql.Column('humidity', sql.Float),
+                          sql.Column('precip', sql.Float),
+                          sql.Column('cloud_cover', sql.Integer))
+weather_table.create(bind=engine)
+for airport in top_airports:
+    weather_data = get_weather_since(airport["icao"], start_year)
+    engine.execute(weather_table.insert(), weather_data)
