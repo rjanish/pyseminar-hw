@@ -19,8 +19,13 @@ def get_monthy_weather(icao, year, month):
     data_stream.next() # skip header
     for line in data_stream:
         data = line.split(',')
-        for data_pt, value in enumerate(data):
-            if (value == 'T') or (value == 'MM'):
+        # verify weather data is of numeric type
+        # ignore data field and wind direction, which has an annoying tag
+        for data_pt, value in enumerate(data[1:-1]): 
+            data_pt = data_pt + 1
+            try:
+                data[data_pt] = float(value)
+            except ValueError: # for missing data or trace percip, use 0.0
                 data[data_pt] = 0.0
         weather_data.append({"date": unicode(data[0], 'utf-8'),
                              "min_temp": float(data[3]),
