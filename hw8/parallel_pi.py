@@ -4,13 +4,10 @@
 # Ryan Janish
 
 from multiprocessing import Pool, cpu_count
-from subprocess import call
-from functools import partial
 from time import time
 
 import numpy as np
 from numpy.random import random
-from IPython import parallel
 
 def count_hits_loop(n):
 	''' 
