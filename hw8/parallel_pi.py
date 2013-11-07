@@ -73,20 +73,6 @@ def compute_pi_multiprocessing(n, cores=None, style='numpy'):
 	exec_time = time() - start
 	return 4*hits/float(n), exec_time
 
-def compute_pi_ipythoncluster(n, cores=4):
-	'''
-	Approximate pi using a monte-carlo dartboard, implemented using
-	pure python loops parallelized over the passed number of cores. 
-	Parallelization is done with an ipython cluster. n is the number 
-	of darts simulated.
-	'''
-	call(['ipcluster', 'start',  '-n',  '4'])
-	rc = parallel.Client()
-	dview = rc[:]
-	dview.apply(count_hits, n/int(cores))
-
-	call(['ipcluster', 'stop'])
-
 if __name__ == '__main__':
 	# run each serial/parallel method with both loops and numpy 
 	# for 10 log-spaced samples between 10 and 10**8
