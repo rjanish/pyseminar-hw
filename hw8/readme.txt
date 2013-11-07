@@ -1,8 +1,9 @@
-
+parallel_pi.py
 This script compares various serial and parallel implementations of a monte carlo dart board simulation to approximate pi.  There are four methods tested: a serial implementation and a parallel implementation using multiprocessing, and for each a these a method using pure python loops and one using vectorized numpy arrays. 
 
 monte-carlo-comparison.pdf contains a plot of the output as run on my machine, giving the execution time, simulation rate, and accuracy as a function of the number of simulation realizations.  To reproduce this, simply run the script:
 	$ python parallel_pi.py
-which will regenerate the plot. Note that the cpu info displayed in the plot title is hard-coded and will not probably not be accurate when run on a different machine.  
+which will regenerate the plot. Note that the cpu info displayed in the plot title is hard-coded and will not probably not be accurate when run on a different machine.  The peak memory usage of this script is just under 2300 Mib, and a memory usage plot is given in memory-usage.py. 
 
-The two parallel methods are slower until about N > 10**5, due to the overhead of setting up the parallel computations.  
+The two parallel methods are slower until about N > 10**5, due to the overhead of setting up the parallel computations.  After N ~ 10**6 the trend stabilized, with the parallel implementations running roughly twice as fast as the serial counterparts, which is expected on a 4-core laptop with 2 physical cpus.  The numpy implementations are about a factor of 10 faster than the loop ones for large N and are even better at small N.  The numpy version without multiprocessing is significantly better than either loop version and is clearly the best option unless both N is very large and speed is essential, in which case multiprocessing+numpy performs better.  The straight numpy version is not entirely 'serial' as the underlying libraries use multiple cores, however it is serial in a practical sense as the code does not require any special parallel techniques.  The multi-core computations handled only by the numpy library are not ideally parallel, however, as the mulitprocessing version does have noticeable gains once N > 10**6. 
+
