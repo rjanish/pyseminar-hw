@@ -1,3 +1,7 @@
+'''script comparing various serial and parallel implementations'''
+
+# homework 8, python seminar fall 2013
+# Ryan Janish
 
 from multiprocessing import Pool, cpu_count
 from subprocess import call
