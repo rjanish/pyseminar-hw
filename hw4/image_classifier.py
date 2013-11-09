@@ -61,6 +61,8 @@ class ImageFeaturizer(object):
                 im_features += feature_func(im)
             if len(im.shape) == 3:
               gray = im.sum(axis=2)
+            else:
+              gray = im
             for feature_func in self.gray_features_to_use:
                 im_features += feature_func(gray)
             self.features.append(im_features)

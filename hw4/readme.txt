@@ -98,3 +98,7 @@ On the 50_categories dataset, construct_classifier takes about 4 minutes to buil
     27      im_std          0.529
     28      g34             0.526
     29      g31             0.523
+
+validation 
+---------------
+The script 'validation_set.py' will run the previously trained model 'trained_classifier.p' on the provided validation images.  This has been done, and the results are summarized in 'results.txt' and 'confusion_matrix.pdf'
