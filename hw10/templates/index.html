@@ -3,5 +3,19 @@
 {% set page_title = 'BibTex Manager' %}
 
 {% block content %}
-	Welcome to BibTex Manager.  You currently have 0 collections.
+	<p> Welcome to BibTex Manager.  You currently have 0 collections. </p>
+	<p> 
+		<form action="welcome" method="POST">
+         Add a collection:
+         <input type="file" />
+         <input type="submit" value='Upload' />
+         </form>
+    </p>
+	<p> 
+		<form action="welcome" method="POST">
+        Search references:
+        <input type="text" name="name" />
+        <input type="submit" value='Search' />
+        </form>
+    </p>
 {% endblock %}
