@@ -4,17 +4,19 @@
 
 {% block content %}
 	<p> Welcome to BibTex Manager.  You currently have 0 collections. </p>
+	<p> {{ uploaded }} </p> 
+	<p> {{ searched }} </p>
 	<p> 
-		<form action="welcome" method="POST">
+		<form action="/" method="POST">
          Add a collection:
-         <input type="file" />
+         <input type="file" name='filename' />
          <input type="submit" value='Upload' />
          </form>
     </p>
 	<p> 
-		<form action="welcome" method="POST">
+		<form action="/" method="POST">
         Search references:
-        <input type="text" name="name" />
+        <input type="text" name="query" />
         <input type="submit" value='Search' />
         </form>
     </p>
