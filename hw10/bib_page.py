@@ -1,3 +1,7 @@
+''' This script implements a flask bibtex database application '''
+
+# homework 10, python seminar fall 2013
+# Ryan Janish
 
 import os
 
@@ -20,6 +24,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///{}'.format(db_filename)
 db = SQLAlchemy(app)
 
 class Reference(db.Model): 
+    ''' database object to hold uploaded references'''
     id = db.Column(db.Integer, primary_key=True)
     ref_tag = db.Column(db.String)
     author = db.Column(db.String)
@@ -44,12 +49,15 @@ class Reference(db.Model):
     def __repr__(self):
         return '<{}>'.format(self.ref_tag)
 
+# create database
 db.create_all()
 
+# action of site
 @app.route("/", methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
         if 'collection_name' in request.form:
+            # upload a file
             collection_name = request.form['collection_name']
             collections.append(collection_name)
             bib_filename = request.files['filename'].filename
@@ -70,6 +78,7 @@ def index():
             return render_template('index.html', 
                                    collections=collections)
         elif len(request.form) > 0:
+            # search current database
             full_results = []
             for key, descriptor in zip(['ref_tag', 'author', 'journal', 
                                         'volume', 'pages', 'year', 
@@ -80,20 +89,14 @@ def index():
                                         Reference.title, Reference.collection]):
                 key_results = []
                 searches = [s.strip() for s in request.form[key].split(',')]
-                print searches
                 for search in searches:
                     if ((search == '') or 
                         (key in ['ref_tag', 'author', 'journal', 'title'])):
                         search = "%{}%".format(search)
                     results = Reference.query.filter(descriptor.ilike(search))
                     key_results += results.all()
-                    print len(key_results)
                 full_results.append(set(key_results))
-                print len(full_results)
-                print
             full_results = list(set.intersection(*full_results))
-            print '---'
-            print len(full_results)
             return render_template('index.html', 
                                    collections=collections,
                                    results=full_results,
