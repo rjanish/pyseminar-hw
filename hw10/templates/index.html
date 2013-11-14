@@ -13,7 +13,7 @@
 		{% endif %}
 	</p>
 	{% for collection in collections %}
-		<p> collection </p>
+		<p> {{ collection }} </p>
 	{% endfor %}
 	<p> Add a collection: </p>
 	<p>	
@@ -25,11 +25,42 @@
         </form>
     </p>
     <p> Search references: </p>
-    <p> 
-		<form action="" method="POST">
-        Enter an SQL Query:
-        <input type="text" name="query" />
-        <input type="submit" value='Search' />
-        </form>
-    </p>
+    <form action="" method="POST">
+        <p> 
+        	Reference Tag:
+        	<input type="text" name="ref_tag" />
+        </p>
+        <p> 
+        	Authors:
+        	<input type="text" name="author" />
+        </p>
+        <p> 
+        	Journal:
+        	<input type="text" name="journal" />
+        </p>
+        <p> 
+        	Volume:
+        	<input type="text" name="volume" />
+        </p>
+        <p> 
+        	Pages:
+        	<input type="text" name="pages" />
+        </p>
+        <p> 
+        	Year:
+        	<input type="text" name="year" />
+        </p>
+        <p> 
+        	Title:
+        	<input type="text" name="title" />
+        </p>
+        <p> 
+        	Collection:
+        	<input type="text" name="collection" />
+            <input type="submit" value='Search' />
+        </p>
+    </form>
+    {% for result in results %}
+		<p> {{ result }} </p>
+	{% endfor %}
 {% endblock %}
