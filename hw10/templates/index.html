@@ -3,19 +3,31 @@
 {% set page_title = 'BibTex Manager' %}
 
 {% block content %}
-	<p> Welcome to BibTex Manager.  You currently have 0 collections. </p>
-	<p> {{ uploaded }} </p> 
-	<p> {{ searched }} </p>
-	<p> 
-		<form action="/" method="POST">
-         Add a collection:
-         <input type="file" name='filename' />
-         <input type="submit" value='Upload' />
-         </form>
+	<p> Welcome to BibTex Manager.
+		{% if collections|length == 0 %}  
+			You currently have 0 collections.
+		{% elif collections|length == 1 %} 
+			You currently have 1 collection:
+		{% else %}
+			You currently have {{ collections|length }} collections:
+		{% endif %}
+	</p>
+	{% for collection in collections %}
+		<p> collection </p>
+	{% endfor %}
+	<p> Add a collection: </p>
+	<p>	
+		<form action="" method="POST" enctype='multipart/form-data'>
+		Collection Name:
+        <input type="text" name='collection_name' />
+        <input type="file" name='filename' />
+        <input type="submit" value='Upload' />
+        </form>
     </p>
-	<p> 
-		<form action="/" method="POST">
-        Search references:
+    <p> Search references: </p>
+    <p> 
+		<form action="" method="POST">
+        Enter an SQL Query:
         <input type="text" name="query" />
         <input type="submit" value='Search' />
         </form>
