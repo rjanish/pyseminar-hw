@@ -1,4 +1,6 @@
 
+import os
+
 from flask import Flask, render_template, request, url_for
 from flask.ext.sqlalchemy import SQLAlchemy
 from pybtex.database.input.bibtex import Parser as btxparser
@@ -9,7 +11,12 @@ app.debug = True
 
 # initialize list of all collections and bib database
 collections = []
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///references.db'
+db_filename = "references.db"
+try:
+    os.remove(db_filename)
+except:
+    pass
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///{}'.format(db_filename)
 db = SQLAlchemy(app)
 
 class Reference(db.Model): 
@@ -62,18 +69,35 @@ def index():
             db.session.commit()
             return render_template('index.html', 
                                    collections=collections)
-        if len(request.form) > 0:
-            results = Reference.query.filter(Reference.ref_tag.ilike("%{}%".format(request.form["ref_tag"])) & 
-                                             Reference.author.ilike("%{}%".format(request.form["author"])) & 
-                                             Reference.journal.ilike("%{}%".format(request.form["journal"])) & 
-                                             Reference.volume.ilike("%{}%".format(request.form["volume"])) & 
-                                             Reference.pages.ilike("%{}%".format(request.form["pages"])) & 
-                                             Reference.year.ilike("%{}%".format(request.form["year"])) & 
-                                             Reference.title.ilike("%{}%".format(request.form["title"])) &
-                                             Reference.collection.ilike("{}".format(request.form["collection"])))
+        elif len(request.form) > 0:
+            full_results = []
+            for key, descriptor in zip(['ref_tag', 'author', 'journal', 
+                                        'volume', 'pages', 'year', 
+                                        'title', 'collection'], 
+                                       [Reference.ref_tag, Reference.author, 
+                                        Reference.journal, Reference.volume, 
+                                        Reference.pages, Reference.year, 
+                                        Reference.title, Reference.collection]):
+                key_results = []
+                searches = [s.strip() for s in request.form[key].split(',')]
+                print searches
+                for search in searches:
+                    if ((search == '') or 
+                        (key in ['ref_tag', 'author', 'journal', 'title'])):
+                        search = "%{}%".format(search)
+                    results = Reference.query.filter(descriptor.ilike(search))
+                    key_results += results.all()
+                    print len(key_results)
+                full_results.append(set(key_results))
+                print len(full_results)
+                print
+            full_results = list(set.intersection(*full_results))
+            print '---'
+            print len(full_results)
             return render_template('index.html', 
                                    collections=collections,
-                                   results=results.all())
+                                   results=full_results,
+                                   display_results=True)
         else:
             return render_template('index.html', 
                                    collections=collections)
@@ -81,4 +105,8 @@ def index():
         return render_template('index.html', 
                                collections=collections)
 
-app.run(use_reloader=False)    
+# run app and clean-up
+try:
+    app.run(use_reloader=False)    
+except KeyboardInterrupt:
+    os.remove(db_filename)

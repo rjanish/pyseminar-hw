@@ -15,6 +15,7 @@
 	{% for collection in collections %}
 		<p> {{ collection }} </p>
 	{% endfor %}
+    <hr>
 	<p> Add a collection: </p>
 	<p>	
 		<form action="" method="POST" enctype='multipart/form-data'>
@@ -24,7 +25,9 @@
         <input type="submit" value='Upload' />
         </form>
     </p>
+    <hr>
     <p> Search references: </p>
+    <p> Enter search terms for any of the following reference properties.  Collection, volume, pages, and year searches must match exactly, but author, journal, reference tag, and title searches will match if the search term is found anywhere in the reference description.  If no search term is given for a category, it will be considered to match all references.  Multiple search terms can be given as a comma separated list, which will return all references matching any of the given terms.  Searches are case-insensitive.     </p>    
     <form action="" method="POST">
         <p> 
         	Reference Tag:
@@ -60,7 +63,21 @@
             <input type="submit" value='Search' />
         </p>
     </form>
-    {% for result in results %}
-		<p> {{ result }} </p>
-	{% endfor %}
+    {% if display_results %}
+        {% if results|length > 0 %}
+            <p> {{ results|length }} references found: </p>
+            {% for n in range(results|length) %}
+        		<p> {{ n + 1 }}. {{ results[n].title }} </p>
+                <p> {{ results[n].author }} </p>
+                <p> {{ results[n].journal }}, 
+                    {{ results[n].volume }}, 
+                    {{ results[n].pages }}, 
+                    {{ results[n].year }} </p>
+                <p> {{ results[n].ref_tag }} </p>
+                <p> {{ results[n].id }} </p>
+        	{% endfor %}
+        {% else %}
+            <p> {{ results|length }} references found. </p>
+        {% endif %}
+    {% endif %}
 {% endblock %}
